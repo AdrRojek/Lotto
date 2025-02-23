@@ -3,15 +3,18 @@ import SwiftData
 import WebKit
 
 @Model
-class Item {
-    var timestamp: Date
+class LottoEntry {
+    var id = UUID()
+    var date: Date
     var numbers: [Int]
     var hasPlus: Bool
+    var checked: [Bool]
     
-    init(timestamp: Date, numbers: [Int], hasPlus: Bool) {
-        self.timestamp = timestamp
+    init(date: Date, numbers: [Int], hasPlus: Bool) {
+        self.date = date
         self.numbers = numbers
         self.hasPlus = hasPlus
+        self.checked = Array(repeating: false, count: numbers.count)
     }
 }
 
@@ -32,30 +35,23 @@ struct WebView: UIViewRepresentable {
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query private var entries: [LottoEntry]
     @State private var showingAddPopup = false
-    @State private var newNumbers = ""
-    @State private var hasPlus = false
+    @State private var newEntries: [TempEntry] = [TempEntry()]
     @State private var errorMessage: String?
 
     var body: some View {
         VStack {
             NavigationSplitView {
                 List {
-                    ForEach(items) { item in
+                    ForEach(entries) { entry in
                         NavigationLink {
-                            DetailView(item: item)
+                            DetailView(entry: entry)
                         } label: {
-                            HStack {
-                                Text(item.numbers.map { String($0) }.joined(separator: " "))
-                                if item.hasPlus {
-                                    Image(systemName: "plus.circle.fill")
-                                        .foregroundColor(.blue)
-                                }
-                            }
+                            EntryRow(entry: entry)
                         }
                     }
-                    .onDelete(perform: deleteItems)
+                    .onDelete(perform: deleteEntries)
                 }
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
@@ -63,127 +59,118 @@ struct ContentView: View {
                     }
                     ToolbarItem {
                         Button(action: { showingAddPopup = true }) {
-                            Label("Add Item", systemImage: "plus")
+                            Label("Dodaj", systemImage: "plus")
                         }
                     }
                 }
             } detail: {
-                Text("Select an item")
+                Text("Wybierz wpis")
             }
             
-            HStack {
-                WebView(url: URL(string: "https://www.lotto.pl/lotto/wyniki-i-wygrane")!)
-                    .frame(height: 600)
-                    .cornerRadius(12)
-                    .padding()
-            }
+            WebView(url: URL(string: "https://www.lotto.pl/lotto/wyniki-i-wygrane")!)
+                .frame(height: 400)
+                .cornerRadius(12)
+                .padding()
         }
         .sheet(isPresented: $showingAddPopup) {
-            AddNumberPopup(
-                newNumbers: $newNumbers,
-                hasPlus: $hasPlus,
+            AddEntryPopup(
+                entries: $newEntries,
                 errorMessage: $errorMessage,
-                onSave: saveNumbers,
-                onCancel: { showingAddPopup = false }
+                onSave: saveEntries,
+                onCancel: {
+                    newEntries = [TempEntry()]
+                    showingAddPopup = false
+                }
             )
         }
     }
 
-    private func saveNumbers() {
-        let numbers = newNumbers.components(separatedBy: " ").compactMap { Int($0) }
-        
-        guard numbers.count == 6 else {
-            errorMessage = "Wprowadź dokładnie 6 liczb!"
-            return
+    private func saveEntries() {
+        for entry in newEntries {
+            let numbers = entry.numbers.components(separatedBy: " ").compactMap { Int($0) }
+            
+            guard numbers.count == 6 else {
+                errorMessage = "Każdy zestaw musi mieć 6 liczb!"
+                return
+            }
+            
+            guard numbers.allSatisfy({ 1...49 ~= $0 }) else {
+                errorMessage = "Liczby muszą być w zakresie 1-49!"
+                return
+            }
+            
+            let newEntry = LottoEntry(
+                date: Date(),
+                numbers: numbers.sorted(),
+                hasPlus: entry.hasPlus
+            )
+            modelContext.insert(newEntry)
         }
         
-        guard numbers.allSatisfy({ 1...49 ~= $0 }) else {
-            errorMessage = "Liczby muszą być w zakresie 1-49!"
-            return
-        }
-        
-        let newItem = Item(
-            timestamp: Date(),
-            numbers: numbers.sorted(),
-            hasPlus: hasPlus
-        )
-        
-        modelContext.insert(newItem)
-        newNumbers = ""
-        hasPlus = false
+        newEntries = [TempEntry()]
         errorMessage = nil
         showingAddPopup = false
     }
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+    private func deleteEntries(offsets: IndexSet) {
+        for index in offsets {
+            modelContext.delete(entries[index])
         }
     }
 }
 
-struct AddNumberPopup: View {
-    @Binding var newNumbers: String
-    @Binding var hasPlus: Bool
-    @Binding var errorMessage: String?
-    var onSave: () -> Void
-    var onCancel: () -> Void
+// MARK: - Wiersz wpisu
+struct EntryRow: View {
+    @Bindable var entry: LottoEntry
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Dodaj nowe losowanie")
-                .font(.headline)
+        VStack(alignment: .leading) {
+            Text(entry.date.formatted(date: .numeric, time: .shortened))
+                .font(.caption)
+                .foregroundColor(.gray)
             
-            TextField("Wpisz 6 liczb oddzielonych spacją", text: $newNumbers)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .keyboardType(.numberPad)
-                .padding()
-            
-            Toggle("Lotto z Plusem", isOn: $hasPlus)
-                .padding(.horizontal)
-            
-            if let error = errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-            }
-            
-            HStack(spacing: 20) {
-                Button("Anuluj", action: onCancel)
-                    .buttonStyle(.bordered)
+            HStack {
+                ForEach(0..<entry.numbers.count, id: \.self) { index in
+                    Button {
+                        entry.checked[index].toggle()
+                    } label: {
+                        Text("\(entry.numbers[index])")
+                            .numberStyle(checked: entry.checked[index])
+                    }
+                    .buttonStyle(.plain)
+                }
                 
-                Button("Zapisz", action: onSave)
-                    .buttonStyle(.borderedProminent)
+                if entry.hasPlus {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundColor(.blue)
+                }
             }
-            .padding()
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(15)
-        .shadow(radius: 10)
-        .padding()
+        .padding(.vertical, 8)
     }
 }
 
+// MARK: - Widok szczegółów
 struct DetailView: View {
-    let item: Item
+    @Bindable var entry: LottoEntry
     
     var body: some View {
         VStack(spacing: 20) {
-            Text("Data: \(item.timestamp, style: .date)")
+            Text(entry.date.formatted(date: .complete, time: .shortened))
                 .font(.title3)
             
             HStack {
-                ForEach(item.numbers, id: \.self) { number in
-                    Text("\(number)")
-                        .padding()
-                        .background(Circle().fill(Color.blue))
-                        .foregroundColor(.white)
+                ForEach(0..<entry.numbers.count, id: \.self) { index in
+                    Button {
+                        entry.checked[index].toggle()
+                    } label: {
+                        Text("\(entry.numbers[index])")
+                            .numberStyle(checked: entry.checked[index])
+                    }
                 }
             }
             
-            if item.hasPlus {
+            if entry.hasPlus {
                 Text("Lotto z Plusem")
                     .foregroundColor(.green)
                     .font(.headline)
@@ -193,7 +180,92 @@ struct DetailView: View {
     }
 }
 
+// MARK: - Styl liczby
+extension View {
+    func numberStyle(checked: Bool) -> some View {
+        self
+            .padding(10)
+            .frame(minWidth: 40)
+            .background(Circle().fill(checked ? Color.green : Color.blue))
+            .foregroundColor(.white)
+            .font(.headline)
+    }
+}
+
+// MARK: - Tymczasowy model dla formularza
+struct TempEntry: Identifiable {
+    let id = UUID()
+    var numbers = ""
+    var hasPlus = false
+}
+
+// MARK: - Popup dodawania
+struct AddEntryPopup: View {
+    @Binding var entries: [TempEntry]
+    @Binding var errorMessage: String?
+    var onSave: () -> Void
+    var onCancel: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 15) {
+            Text("Dodaj nowe losowanie")
+                .font(.title3)
+            
+            ScrollView {
+                VStack(spacing: 15) {
+                    ForEach($entries) { $entry in
+                        HStack {
+                            TextField("Liczby (6 liczb)", text: $entry.numbers)
+                                .textFieldStyle(.roundedBorder)
+                                .keyboardType(.numberPad)
+                            
+                            Toggle("Plus", isOn: $entry.hasPlus)
+                                .labelsHidden()
+                            
+                            Button {
+                                if let index = entries.firstIndex(where: { $0.id == entry.id }) {
+                                    entries.remove(at: index)
+                                }
+                            } label: {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+            
+            HStack {
+                Button("Dodaj kolejny") {
+                    entries.append(TempEntry())
+                }
+                
+                Spacer()
+                
+                Button("Anuluj", action: onCancel)
+                    .buttonStyle(.bordered)
+                
+                Button("Zapisz", action: onSave)
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding()
+            
+            if let error = errorMessage {
+                Text(error)
+                    .foregroundColor(.red)
+            }
+        }
+        .padding()
+        .background(.regularMaterial)
+        .cornerRadius(15)
+        .shadow(radius: 10)
+        .padding()
+    }
+}
+
+// MARK: - Podgląd
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: LottoEntry.self, inMemory: true)
 }

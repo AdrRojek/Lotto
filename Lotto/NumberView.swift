@@ -144,5 +144,5 @@ struct NumberCircle: View {
 
 #Preview {
     NumberView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: LottoEntry.self, inMemory: true)
 }
