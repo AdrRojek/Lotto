@@ -2,7 +2,18 @@ import SwiftUI
 import SwiftData
 import WebKit
 
-
+@Model
+class Item {
+    var timestamp: Date
+    var numbers: [Int]
+    var hasPlus: Bool
+    
+    init(timestamp: Date, numbers: [Int], hasPlus: Bool) {
+        self.timestamp = timestamp
+        self.numbers = numbers
+        self.hasPlus = hasPlus
+    }
+}
 
 struct WebView: UIViewRepresentable {
     let url: URL
