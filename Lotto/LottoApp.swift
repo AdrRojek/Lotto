@@ -1,10 +1,3 @@
-//
-//  LottoApp.swift
-//  Lotto
-//
-//  Created by adrian on 23/02/2025.
-//
-
 import SwiftUI
 import SwiftData
 
