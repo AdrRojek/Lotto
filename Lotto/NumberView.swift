@@ -9,44 +9,76 @@ class LottoScraper: ObservableObject {
     @Published var error: String?
     
     func fetch() {
+        print("Rozpoczynanie pobierania...")
         guard let url = URL(string: "https://www.lotto.pl/lotto/wyniki-i-wygrane") else {
-            self.error = "Nieprawidłowy URL"
+            self.handleError("Nieprawidłowy URL")
             return
         }
         
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        var request = URLRequest(url: url)
+        request.setValue("Mozilla/5.0 (compatible; MyLottoApp)", forHTTPHeaderField: "User-Agent")
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             if let error = error {
-                self?.handleError(error.localizedDescription)
+                self?.handleError("Błąd sieciowy: \(error.localizedDescription)")
                 return
             }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                self?.handleError("Brak odpowiedzi HTTP")
+                return
+            }
+            
+            print("Status HTTP:", httpResponse.statusCode)
+            print("Nagłówki:", httpResponse.allHeaderFields)
             
             guard let data = data, let html = String(data: data, encoding: .utf8) else {
                 self?.handleError("Brak danych")
                 return
             }
             
+            print("Pierwsze 500 znaków HTML:")
+            print(String(html.prefix(500)))
+            
             DispatchQueue.main.async {
                 self?.parseHTML(html)
             }
         }.resume()
+    }
+    func testWithMockHTML() {
+        let mockHTML = """
+        <div class="lotto-results">
+            <span class="date-value">12.07.2024</span>
+            <div class="results-container">
+                <div class="result-item">11</div>
+                <div class="result-item">22</div>
+                <div class="result-item">33</div>
+                <div class="result-item">44</div>
+                <div class="result-item">55</div>
+                <div class="result-item">66</div>
+            </div>
+        </div>
+        """
+        
+        self.parseHTML(mockHTML)
     }
     
     private func parseHTML(_ html: String) {
         do {
             let doc = try SwiftSoup.parse(html)
             
-            // Parsowanie daty losowania
-            if let dateElement = try doc.select("div.wynik_lotto div.date").first() {
+            guard let resultsContainer = try doc.select("div.lotto-results").first() else {
+                self.handleError("Nie znaleziono kontenera wyników")
+                return
+            }
+            
+            if let dateElement = try resultsContainer.select("span.date-value").first() {
                 self.drawDate = try dateElement.text()
             }
             
-            // Parsowanie numerów
-            let numbers = try doc.select("div.wynik_lotto span.number")
+            let numbers = try resultsContainer.select("div.your-correct-css-selector")
                 .compactMap { try? $0.text() }
-                .filter { $0.trimmingCharacters(in: .whitespaces) != "" }
-                .prefix(6)
-                .map { $0 }
-            
+
             self.numbers = numbers.count == 6 ? numbers : ["?", "?", "?", "?", "?", "?"]
             
         } catch {
@@ -67,6 +99,10 @@ struct NumberView: View {
     
     var body: some View {
         VStack(spacing: 20) {
+            Button("Testuj z mockiem HTML") {
+                            scraper.testWithMockHTML()
+                        }
+            
             if let error = scraper.error {
                 Text("Błąd: \(error)")
                     .foregroundColor(.red)
@@ -103,6 +139,8 @@ struct NumberCircle: View {
             .overlay(Circle().stroke(Color.white, lineWidth: 2))
     }
 }
+                                                      
+                                                
 
 #Preview {
     NumberView()

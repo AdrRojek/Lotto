@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3A8F8D2C2D6BC73200E270DC /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 3A8F8D2B2D6BC73200E270DC /* SwiftSoup */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3A1F2ABE2D6BB6170033E574 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3A8F8D2C2D6BC73200E270DC /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Lotto;
 			packageProductDependencies = (
+				3A8F8D2B2D6BC73200E270DC /* SwiftSoup */,
 			);
 			productName = Lotto;
 			productReference = 3A1F2AAB2D6BB6160033E574 /* Lotto.app */;
@@ -572,6 +578,14 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3A8F8D2B2D6BC73200E270DC /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3A1F2AFF2D6BC0FB0033E574 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3A1F2AA32D6BB6160033E574 /* Project object */;
 }
