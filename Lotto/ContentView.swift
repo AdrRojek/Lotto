@@ -330,18 +330,18 @@ struct EntryView: View {
 struct NumberPadView: View {
     @Binding var selectedNumbers: [Int]
     
-    let columns = Array(repeating: GridItem(.flexible()), count: 7)
+    let columns = Array(repeating: GridItem(.flexible()), count: 10)
     
     var body: some View {
-        VStack(spacing: 10) {
-            LazyVGrid(columns: columns, spacing: 10) {
+        VStack(spacing: 15) {
+            LazyVGrid(columns: columns, spacing: 15) {
                 ForEach(1...49, id: \.self) { number in
                     Button(action: {
                         toggleNumber(number)
                     }) {
                         Text("\(number)")
                             .font(.system(size: 13, weight: .bold))
-                            .frame(width: 40, height: 40)
+                            .frame(width: 30, height: 30)
                             .background(selectedNumbers.contains(number) ? Color.blue : Color.gray.opacity(0.2))
                             .foregroundColor(selectedNumbers.contains(number) ? .white : .primary)
                             .cornerRadius(20)
@@ -353,10 +353,14 @@ struct NumberPadView: View {
             Button("Wyczyść") {
                 selectedNumbers.removeAll()
             }
+            .frame(width:70,height: 5)
             .padding()
             .background(Color.red)
             .foregroundColor(.white)
             .cornerRadius(10)
+            .frame(width: 350)
+            .padding()
+            
         }
     }
     
