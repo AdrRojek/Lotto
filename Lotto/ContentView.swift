@@ -48,7 +48,7 @@ struct ContentView: View {
         VStack {
             NavigationSplitView {
                 List {
-                    ForEach(entries) { entry in
+                    ForEach(entries.sorted(by: { $0.date > $1.date })) { entry in
                         NavigationLink {
                             DetailView(entry: entry)
                         } label: {
@@ -58,13 +58,21 @@ struct ContentView: View {
                     .onDelete(perform: deleteEntries)
                 }
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    ToolbarItem(placement: .navigationBarLeading) {
                         EditButton()
                     }
-                    ToolbarItem {
+                    ToolbarItem(placement: .navigationBarLeading) {
                         Button(action: { showingAddPopup = true }) {
                             Label("Dodaj", systemImage: "plus")
                         }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Usuń wszystko") {
+                            for entry in entries {
+                                modelContext.delete(entry)
+                            }
+                        }
+                        .tint(.red)
                     }
                 }
             } detail: {
@@ -98,28 +106,18 @@ struct ContentView: View {
                 continue
             }
             
-            let numbers = entry.numbers.components(separatedBy: " ").compactMap { Int($0) }
+            let numbers = entry.numbers.components(separatedBy: " ").compactMap { Int($0) }.sorted()
             
-            for i in 1..<numbers.count {
-                if numbers.sorted()[i] == numbers.sorted()[i - 1] {
-                    errorMessage = "Liczby muszą się różnić!"
-                    return
-                }
-            }
-            
-            guard numbers.count == 6 else {
-                errorMessage = "Każdy zestaw musi mieć 6 liczb!"
-                return
-            }
-            
-            guard numbers.allSatisfy({ 1...49 ~= $0 }) else {
-                errorMessage = "Liczby muszą być w zakresie 1-49!"
+            guard numbers.count == 6,
+                  numbers.allSatisfy({ 1...49 ~= $0 }),
+                  numbers == Array(Set(numbers)).sorted() else {
+                errorMessage = "Każdy zestaw musi mieć 6 unikalnych liczb w zakresie 1-49!"
                 return
             }
             
             let newEntry = LottoEntry(
                 date: Date(),
-                numbers: numbers.sorted(),
+                numbers: numbers,
                 hasPlus: entry.hasPlus
             )
             validEntries.append(newEntry)
@@ -278,6 +276,9 @@ struct AddEntryPopup: View {
             if let error = errorMessage {
                 Text(error)
                     .foregroundColor(.red)
+                    .padding()
+                    .background(Color.red.opacity(0.2))
+                    .cornerRadius(8)
             }
         }
         .padding()
@@ -333,33 +334,42 @@ struct NumberPadView: View {
     let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
-            ForEach(1...49, id: \.self) { number in
-                Button(action: {
-                    toggleNumber(number)
-                }) {
-                    Text("\(number)")
-                        .font(.system(size: 18, weight: .bold))
-                        .frame(width: 40, height: 40)
-                        .background(selectedNumbers.contains(number) ? Color.blue : Color.gray.opacity(0.2))
-                        .foregroundColor(selectedNumbers.contains(number) ? .white : .primary)
-                        .cornerRadius(20)
+        VStack(spacing: 10) {
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(1...49, id: \.self) { number in
+                    Button(action: {
+                        toggleNumber(number)
+                    }) {
+                        Text("\(number)")
+                            .font(.system(size: 13, weight: .bold))
+                            .frame(width: 40, height: 40)
+                            .background(selectedNumbers.contains(number) ? Color.blue : Color.gray.opacity(0.2))
+                            .foregroundColor(selectedNumbers.contains(number) ? .white : .primary)
+                            .cornerRadius(20)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            
+            Button("Wyczyść") {
+                selectedNumbers.removeAll()
+            }
+            .padding()
+            .background(Color.red)
+            .foregroundColor(.white)
+            .cornerRadius(10)
         }
     }
     
     private func toggleNumber(_ number: Int) {
         if selectedNumbers.contains(number) {
             selectedNumbers.removeAll { $0 == number }
-        } else {
-            if selectedNumbers.count < 6 {
-                selectedNumbers.append(number)
-            }
+        } else if selectedNumbers.count < 6 {
+            selectedNumbers.append(number)
         }
     }
 }
+
 
 // MARK: - Podgląd
 #Preview {
