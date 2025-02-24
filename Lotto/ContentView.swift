@@ -89,6 +89,13 @@ struct ContentView: View {
         for entry in newEntries {
             let numbers = entry.numbers.components(separatedBy: " ").compactMap { Int($0) }
             
+            for i in 1...5 {
+                if numbers.sorted()[i] == numbers.sorted()[i-1]{
+                    errorMessage = "Liczby musza sie różnić!"
+                    return
+                }
+            }
+            
             guard numbers.count == 6 else {
                 errorMessage = "Każdy zestaw musi mieć 6 liczb!"
                 return
@@ -142,7 +149,7 @@ struct EntryRow: View {
                 
                 if entry.hasPlus {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.green)
                 }
             }
         }
@@ -217,7 +224,7 @@ struct AddEntryPopup: View {
                         HStack {
                             TextField("Liczby (6 liczb)", text: $entry.numbers)
                                 .textFieldStyle(.roundedBorder)
-                                .keyboardType(.numberPad)
+                                .keyboardType(.numbersAndPunctuation)
                             
                             Toggle("Plus", isOn: $entry.hasPlus)
                                 .labelsHidden()
