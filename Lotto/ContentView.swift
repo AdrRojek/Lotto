@@ -101,8 +101,7 @@ struct ContentView: View {
         var validEntries: [LottoEntry] = []
         
         for entry in newEntries {
-            let trimmedNumbers = entry.numbers.trimmingCharacters(in: .whitespaces)
-            guard !trimmedNumbers.isEmpty else {
+            guard !entry.numbers.trimmingCharacters(in: .whitespaces).isEmpty else {
                 continue
             }
             
