@@ -236,6 +236,7 @@ struct TempEntry: Identifiable {
     let id = UUID()
     var numbers = ""
     var hasPlus = false
+    var selectedNumbers: [Int] = []
 }
 
 // MARK: - Popup dodawania
@@ -245,8 +246,6 @@ struct AddEntryPopup: View {
     var onSave: () -> Void
     var onCancel: () -> Void
     
-    @State private var selectedNumbers: [Int] = []
-    
     var body: some View {
         VStack(spacing: 15) {
             Text("Dodaj nowe losowanie")
@@ -254,35 +253,8 @@ struct AddEntryPopup: View {
             
             ScrollView {
                 VStack(spacing: 15) {
-                    ForEach($entries) { $entry in
-                        VStack {
-                            HStack {
-                                ForEach(selectedNumbers.sorted(), id: \.self) { number in
-                                    Text("\(number)")
-                                        .numberStyle(checked: true)
-                                        .transition(.scale)
-                                }
-                            }
-                            
-                            NumberPadView(selectedNumbers: $selectedNumbers)
-                            
-                            HStack {
-                                Toggle("Plus", isOn: $entry.hasPlus)
-                                    .labelsHidden()
-                                
-                                Button {
-                                    if let index = entries.firstIndex(where: { $0.id == entry.id }) {
-                                        entries.remove(at: index)
-                                    }
-                                } label: {
-                                    Image(systemName: "trash")
-                                        .foregroundColor(.red)
-                                }
-                            }
-                        }
-                        .padding()
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
+                    ForEach($entries.indices, id: \.self) { index in
+                        EntryView(entry: $entries[index], allEntries: $entries)
                     }
                 }
                 .padding()
@@ -313,10 +285,44 @@ struct AddEntryPopup: View {
         .cornerRadius(15)
         .shadow(radius: 10)
         .padding()
-        .onChange(of: selectedNumbers) { newValue in
-            if !entries.isEmpty {
-                entries[0].numbers = newValue.sorted().map { String($0) }.joined(separator: " ")
+    }
+}
+
+struct EntryView: View {
+    @Binding var entry: TempEntry
+    @Binding var allEntries: [TempEntry]
+    
+    var body: some View {
+        VStack {
+            HStack {
+                ForEach(entry.selectedNumbers.sorted(), id: \.self) { number in
+                    Text("\(number)")
+                        .numberStyle(checked: true)
+                        .transition(.scale)
+                }
             }
+            
+            NumberPadView(selectedNumbers: $entry.selectedNumbers)
+            
+            HStack {
+                Toggle("Plus", isOn: $entry.hasPlus)
+                    .labelsHidden()
+                
+                Button {
+                    if let index = allEntries.firstIndex(where: { $0.id == entry.id }) {
+                        allEntries.remove(at: index)
+                    }
+                } label: {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .onChange(of: entry.selectedNumbers) { newValue in
+            entry.numbers = newValue.sorted().map { String($0) }.joined(separator: " ")
         }
     }
 }
