@@ -9,12 +9,15 @@ class LottoEntry {
     var numbers: [Int]
     var hasPlus: Bool
     var checked: [Bool]
+    var plusChecked : [Bool]
     
     init(date: Date, numbers: [Int], hasPlus: Bool) {
         self.date = date
         self.numbers = numbers
         self.hasPlus = hasPlus
         self.checked = Array(repeating: false, count: numbers.count)
+        self.plusChecked = Array(repeating: false, count: numbers.count)
+
     }
 }
 
@@ -91,7 +94,7 @@ struct ContentView: View {
             
             for i in 1...5 {
                 if numbers.sorted()[i] == numbers.sorted()[i-1]{
-                    errorMessage = "Liczby musza sie różnić!"
+                    errorMessage = "Liczby muszą sie różnić!"
                     return
                 }
             }
@@ -175,9 +178,21 @@ struct DetailView: View {
                             .numberStyle(checked: entry.checked[index])
                     }
                 }
+                .id("main-\(entry.id)-\(String(describing: index))")
             }
             
             if entry.hasPlus {
+                HStack {
+                    ForEach(0..<entry.numbers.count, id: \.self) { index in
+                        Button {
+                            entry.plusChecked[index].toggle()
+                        } label: {
+                            Text("\(entry.numbers[index])")
+                                .numberStyle(checked: entry.plusChecked[index])
+                        }
+                    }
+                    .id("plus-\(entry.id)-\(String(describing: index))")
+                }
                 Text("Lotto z Plusem")
                     .foregroundColor(.green)
                     .font(.headline)
