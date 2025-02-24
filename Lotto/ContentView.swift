@@ -245,6 +245,9 @@ struct AddEntryPopup: View {
     var onSave: () -> Void
     var onCancel: () -> Void
     
+    // Track selected numbers for each entry
+    @State private var selectedNumbers: [Int] = []
+    
     var body: some View {
         VStack(spacing: 15) {
             Text("Dodaj nowe losowanie")
@@ -253,28 +256,36 @@ struct AddEntryPopup: View {
             ScrollView {
                 VStack(spacing: 15) {
                     ForEach($entries) { $entry in
-                        HStack {
-                            TextField("Liczby (6 liczb)", text: $entry.numbers)
-                                .textFieldStyle(.roundedBorder)
-                                .keyboardType(.numbersAndPunctuation)
-                                .onChange(of: entry.numbers) { newValue in
-                                    if entries.last?.id == entry.id && newValue.trimmingCharacters(in: .whitespaces).isEmpty {
-                                        entries.removeLast()
+                        VStack {
+                            // Selected numbers display
+                            HStack {
+                                ForEach(selectedNumbers.sorted(), id: \.self) { number in
+                                    Text("\(number)")
+                                        .numberStyle(checked: true)
+                                        .transition(.scale)
+                                }
+                            }
+                            
+                            // Number grid
+                            NumberPadView(selectedNumbers: $selectedNumbers)
+                            
+                            HStack {
+                                Toggle("Plus", isOn: $entry.hasPlus)
+                                    .labelsHidden()
+                                
+                                Button {
+                                    if let index = entries.firstIndex(where: { $0.id == entry.id }) {
+                                        entries.remove(at: index)
                                     }
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
                                 }
-                            
-                            Toggle("Plus", isOn: $entry.hasPlus)
-                                .labelsHidden()
-                            
-                            Button {
-                                if let index = entries.firstIndex(where: { $0.id == entry.id }) {
-                                    entries.remove(at: index)
-                                }
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundColor(.red)
                             }
                         }
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
                     }
                 }
                 .padding()
@@ -305,6 +316,46 @@ struct AddEntryPopup: View {
         .cornerRadius(15)
         .shadow(radius: 10)
         .padding()
+        .onChange(of: selectedNumbers) { newValue in
+            // Update the TempEntry numbers string
+            if !entries.isEmpty {
+                entries[0].numbers = newValue.sorted().map { String($0) }.joined(separator: " ")
+            }
+        }
+    }
+}
+
+struct NumberPadView: View {
+    @Binding var selectedNumbers: [Int]
+    
+    let columns = Array(repeating: GridItem(.flexible()), count: 7)
+    
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(1...49, id: \.self) { number in
+                Button(action: {
+                    toggleNumber(number)
+                }) {
+                    Text("\(number)")
+                        .font(.system(size: 18, weight: .bold))
+                        .frame(width: 40, height: 40)
+                        .background(selectedNumbers.contains(number) ? Color.blue : Color.gray.opacity(0.2))
+                        .foregroundColor(selectedNumbers.contains(number) ? .white : .primary)
+                        .cornerRadius(20)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    private func toggleNumber(_ number: Int) {
+        if selectedNumbers.contains(number) {
+            selectedNumbers.removeAll { $0 == number }
+        } else {
+            if selectedNumbers.count < 6 {
+                selectedNumbers.append(number)
+            }
+        }
     }
 }
 
