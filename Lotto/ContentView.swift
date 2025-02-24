@@ -90,12 +90,19 @@ struct ContentView: View {
     }
 
     private func saveEntries() {
+        var validEntries: [LottoEntry] = []
+        
         for entry in newEntries {
+            let trimmedNumbers = entry.numbers.trimmingCharacters(in: .whitespaces)
+            guard !trimmedNumbers.isEmpty else {
+                continue
+            }
+            
             let numbers = entry.numbers.components(separatedBy: " ").compactMap { Int($0) }
             
-            for i in 1...5 {
-                if numbers.sorted()[i] == numbers.sorted()[i-1]{
-                    errorMessage = "Liczby muszą sie różnić!"
+            for i in 1..<numbers.count {
+                if numbers.sorted()[i] == numbers.sorted()[i - 1] {
+                    errorMessage = "Liczby muszą się różnić!"
                     return
                 }
             }
@@ -115,7 +122,16 @@ struct ContentView: View {
                 numbers: numbers.sorted(),
                 hasPlus: entry.hasPlus
             )
-            modelContext.insert(newEntry)
+            validEntries.append(newEntry)
+        }
+        
+        if validEntries.isEmpty {
+            errorMessage = "Brak poprawnych wpisów do zapisania!"
+            return
+        }
+        
+        for entry in validEntries {
+            modelContext.insert(entry)
         }
         
         newEntries = [TempEntry()]
