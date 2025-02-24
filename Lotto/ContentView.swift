@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import WebKit
+import Foundation
 
 @Model
 class LottoEntry {
@@ -240,6 +241,11 @@ struct AddEntryPopup: View {
                             TextField("Liczby (6 liczb)", text: $entry.numbers)
                                 .textFieldStyle(.roundedBorder)
                                 .keyboardType(.numbersAndPunctuation)
+                                .onChange(of: entry.numbers) { newValue in
+                                    if entries.last?.id == entry.id && newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                        entries.removeLast()
+                                    }
+                                }
                             
                             Toggle("Plus", isOn: $entry.hasPlus)
                                 .labelsHidden()
