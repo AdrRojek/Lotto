@@ -245,7 +245,6 @@ struct AddEntryPopup: View {
     var onSave: () -> Void
     var onCancel: () -> Void
     
-    // Track selected numbers for each entry
     @State private var selectedNumbers: [Int] = []
     
     var body: some View {
@@ -257,7 +256,6 @@ struct AddEntryPopup: View {
                 VStack(spacing: 15) {
                     ForEach($entries) { $entry in
                         VStack {
-                            // Selected numbers display
                             HStack {
                                 ForEach(selectedNumbers.sorted(), id: \.self) { number in
                                     Text("\(number)")
@@ -266,7 +264,6 @@ struct AddEntryPopup: View {
                                 }
                             }
                             
-                            // Number grid
                             NumberPadView(selectedNumbers: $selectedNumbers)
                             
                             HStack {
@@ -317,7 +314,6 @@ struct AddEntryPopup: View {
         .shadow(radius: 10)
         .padding()
         .onChange(of: selectedNumbers) { newValue in
-            // Update the TempEntry numbers string
             if !entries.isEmpty {
                 entries[0].numbers = newValue.sorted().map { String($0) }.joined(separator: " ")
             }
