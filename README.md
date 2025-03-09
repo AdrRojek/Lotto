@@ -41,7 +41,7 @@ To get started with the **Lotto Results App**, follow these steps:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/AdrRojek/Lotto.git
+   git clone https://github.com/AdrRojek/Lotto-Results-App.git
    ```
 2. **Open the Project**:
    - Open the project in Xcode.
@@ -66,7 +66,7 @@ We welcome contributions! If you'd like to contribute to the **Lotto Results App
 If you have any questions or feedback, feel free to reach out:
 
 - **Email**: adr.rojek@gmail.com
-- **GitHub Issues**: [Open an Issue](https://github.com/AdrRojek/Lotto/issues)
+- **GitHub Issues**: [Open an Issue](https://github.com/AdrRojek/Lotto-Results-App/issues)
 
 ---
 
